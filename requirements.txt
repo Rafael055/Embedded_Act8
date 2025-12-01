@@ -1,5 +1,10 @@
-Flask==2.3.3
-gTTS==2.3.2
-SpeechRecognition==3.11.0
-RPi.GPIO==0.7.1
-# pyaudio - Install via system package: sudo apt-get install python3-pyaudio
+flask
+gTTS
+SpeechRecognition
+pyaudio
+gpiozero
+lgpio
+
+# System dependencies required:
+# sudo apt-get install portaudio19-dev python3-lgpio
+# Note: venv should be created with --system-site-packages for lgpio

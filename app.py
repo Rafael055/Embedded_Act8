@@ -1,56 +1,18 @@
 from flask import Flask, render_template, jsonify, request, send_file
 from gtts import gTTS
-import sys
 import os
 import threading
 import time
 from datetime import datetime
 import uuid
-from buzzer import Buzzer
+from buzzer import buzzer
 import json
-
-# Python 3.13+ compatibility: Several audio modules were removed
-# We need to create stubs for SpeechRecognition to work
-if sys.version_info >= (3, 13):
-    import types
-    
-    # Create minimal stubs for removed modules
-    aifc = types.ModuleType('aifc')
-    audioop = types.ModuleType('audioop')
-    
-    # Add minimal required attributes/functions for audioop
-    audioop.error = Exception
-    audioop.ratecv = lambda *args: (b'', 0)
-    audioop.rms = lambda data, width: 0  # Return 0 for root mean square
-    audioop.max = lambda data, width: 0
-    audioop.minmax = lambda data, width: (0, 0)
-    audioop.avg = lambda data, width: 0
-    audioop.maxpp = lambda data, width: 0
-    audioop.cross = lambda data, width: 0
-    audioop.mul = lambda data, width, factor: data
-    audioop.tomono = lambda data, width, lfactor, rfactor: data
-    audioop.tostereo = lambda data, width, lfactor, rfactor: data
-    audioop.add = lambda data1, data2, width: data1
-    audioop.bias = lambda data, width, bias: data
-    audioop.reverse = lambda data, width: data
-    audioop.lin2lin = lambda data, width, newwidth: data
-    audioop.lin2ulaw = lambda data, width: data
-    audioop.ulaw2lin = lambda data, width: data
-    audioop.lin2alaw = lambda data, width: data
-    audioop.alaw2lin = lambda data, width: data
-    audioop.lin2adpcm = lambda data, width, state: (data, state)
-    audioop.adpcm2lin = lambda data, width, state: (data, state)
-    
-    sys.modules['aifc'] = aifc
-    sys.modules['audioop'] = audioop
-
-# Now import speech_recognition after the fix
 import speech_recognition as sr
 
 app = Flask(__name__)
 
-# Initialize buzzer on GPIO 17 (same as Act6 and Act7)
-buzzer = Buzzer(pin=17)
+# Import the global buzzer instance from buzzer.py
+# (already initialized there, no need to create a new one)
 
 # Directory for storing audio files
 AUDIO_DIR = 'static/audio'
@@ -361,4 +323,5 @@ if __name__ == '__main__':
     print(f"✓ Bad words filter: {len(BAD_WORDS)} words")
     print("=" * 60)
     
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # use_reloader=False prevents GPIO conflicts on restart
+    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
