@@ -1,11 +1,11 @@
-import RPi.GPIO as GPIO
+from gpiozero import Buzzer as GPIOBuzzer
 import threading
 import time
 
 class Buzzer:
     def __init__(self, pin=17):
         """
-        Initialize Buzzer module
+        Initialize Buzzer module using gpiozero
         
         Args:
             pin: GPIO pin number (BCM mode) for Buzzer
@@ -14,11 +14,8 @@ class Buzzer:
         self.is_active = False
         self.thread = None
         
-        # Setup GPIO
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setwarnings(False)
-        GPIO.setup(self.pin, GPIO.OUT)
-        GPIO.output(self.pin, GPIO.LOW)
+        # Setup using gpiozero
+        self.buzzer = GPIOBuzzer(self.pin)
         
         print(f"✓ Buzzer initialized on GPIO {self.pin}")
     
@@ -52,22 +49,22 @@ class Buzzer:
     
     def _single_beep(self, duration):
         """Single continuous beep"""
-        GPIO.output(self.pin, GPIO.HIGH)
+        self.buzzer.on()
         time.sleep(duration)
-        GPIO.output(self.pin, GPIO.LOW)
+        self.buzzer.off()
     
     def _double_beep(self, duration):
         """Two short beeps"""
         beep_time = duration / 3
         gap_time = duration / 6
         
-        GPIO.output(self.pin, GPIO.HIGH)
+        self.buzzer.on()
         time.sleep(beep_time)
-        GPIO.output(self.pin, GPIO.LOW)
+        self.buzzer.off()
         time.sleep(gap_time)
-        GPIO.output(self.pin, GPIO.HIGH)
+        self.buzzer.on()
         time.sleep(beep_time)
-        GPIO.output(self.pin, GPIO.LOW)
+        self.buzzer.off()
     
     def _triple_beep(self, duration):
         """Three short beeps"""
@@ -75,9 +72,9 @@ class Buzzer:
         gap_time = duration / 10
         
         for i in range(3):
-            GPIO.output(self.pin, GPIO.HIGH)
+            self.buzzer.on()
             time.sleep(beep_time)
-            GPIO.output(self.pin, GPIO.LOW)
+            self.buzzer.off()
             if i < 2:
                 time.sleep(gap_time)
     
@@ -88,9 +85,9 @@ class Buzzer:
         elapsed = 0
         
         while elapsed < duration:
-            GPIO.output(self.pin, GPIO.HIGH)
+            self.buzzer.on()
             time.sleep(beep_time)
-            GPIO.output(self.pin, GPIO.LOW)
+            self.buzzer.off()
             time.sleep(gap_time)
             elapsed += (beep_time + gap_time)
     
@@ -101,9 +98,9 @@ class Buzzer:
         elapsed = 0
         
         while elapsed < duration:
-            GPIO.output(self.pin, GPIO.HIGH)
+            self.buzzer.on()
             time.sleep(beep_time)
-            GPIO.output(self.pin, GPIO.LOW)
+            self.buzzer.off()
             time.sleep(gap_time)
             elapsed += (beep_time + gap_time)
     
@@ -121,13 +118,13 @@ class Buzzer:
     def stop(self):
         """Stop buzzer and cleanup"""
         self.is_active = False
-        GPIO.output(self.pin, GPIO.LOW)
+        self.buzzer.off()
     
     def __del__(self):
-        """Cleanup GPIO on deletion"""
+        """Cleanup on deletion"""
         try:
-            GPIO.output(self.pin, GPIO.LOW)
-            GPIO.cleanup(self.pin)
+            self.buzzer.off()
+            self.buzzer.close()
         except:
             pass
 

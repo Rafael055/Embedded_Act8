@@ -6,6 +6,9 @@ let currentFilename = null;
 let audioElement = document.getElementById('audioElement');
 let isRecording = false;
 
+// Web Speech API recognition instance (like Act7)
+let recognition = null;
+
 // ===================================
 // DOM Elements
 // ===================================
@@ -170,55 +173,42 @@ async function handleTextToSpeech() {
 }
 
 // ===================================
-// Voice Input Functions
+// Voice Input Functions (Web Speech API - like Act7)
 // ===================================
-let voiceAbortController = null;
 
-async function handleVoiceInput() {
-  // If currently recording, stop it
-  if (isRecording) {
-    stopVoiceInput();
-    return;
-  }
+// Initialize Web Speech API
+function initSpeechRecognition() {
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
 
-  // Start recording
-  isRecording = true;
-  voiceAbortController = new AbortController();
+    recognition.onstart = function () {
+      isRecording = true;
+      voiceBtn.classList.add('listening');
+      voiceBtn.innerHTML = '<i class="fas fa-stop"></i><span>Stop Listening</span>';
+      voiceStatus.innerHTML = '<div class="status-message info">🎤 Listening... Speak now! (Auto-stops when you stop talking)</div>';
+    };
 
-  voiceBtn.classList.add('listening');
-  voiceBtn.innerHTML = '<i class="fas fa-stop"></i><span>Stop Listening</span>';
-  voiceStatus.innerHTML = '<div class="status-message info">🎤 Listening... Speak now or click to stop!</div>';
+    recognition.onend = function () {
+      isRecording = false;
+      voiceBtn.classList.remove('listening');
+      voiceBtn.innerHTML = '<i class="fas fa-microphone"></i><span>Speak to Mini-Bot</span>';
+    };
 
-  const language = languageSelect.value;
+    recognition.onresult = function (event) {
+      const transcript = event.results[0][0].transcript;
 
-  try {
-    const response = await fetch('/api/voice-to-text', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        language: language
-      }),
-      signal: voiceAbortController.signal
-    });
-
-    const data = await response.json();
-
-    if (response.ok && data.success) {
-      // Display recognized text immediately in textbox
-      textInput.value = data.text;
+      // Display recognized text in textbox
+      textInput.value = transcript;
       voiceStatus.innerHTML = '<div class="status-message success">✓ Voice recognized successfully!</div>';
 
-      // Display warning if bad words detected
-      if (data.warning) {
-        showNotification(data.warning, 'warning');
-      } else {
-        showNotification('Voice recognized: "' + data.text + '"', 'success');
-      }
-
       // Update bot message
-      updateBotMessage(data.text);
+      updateBotMessage(transcript);
+
+      // Check for bad words via server
+      checkBadWordsAndNotify(transcript);
 
       // Reload activity log
       loadActivityLog();
@@ -227,42 +217,96 @@ async function handleVoiceInput() {
       setTimeout(() => {
         voiceStatus.innerHTML = '';
       }, 3000);
+    };
 
+    recognition.onerror = function (event) {
+      console.error('Speech recognition error:', event.error);
+      isRecording = false;
+      voiceBtn.classList.remove('listening');
+      voiceBtn.innerHTML = '<i class="fas fa-microphone"></i><span>Speak to Mini-Bot</span>';
+
+      if (event.error === 'no-speech') {
+        voiceStatus.innerHTML = '<div class="status-message error">✗ No speech detected. Please try again.</div>';
+        showNotification('No speech detected. Please try again.', 'error');
+      } else if (event.error === 'not-allowed') {
+        voiceStatus.innerHTML = '<div class="status-message error">✗ Microphone access denied</div>';
+        showNotification('Microphone access denied. Please allow microphone access.', 'error');
+      } else if (event.error === 'aborted') {
+        voiceStatus.innerHTML = '<div class="status-message warning">⚠ Listening stopped</div>';
+      } else {
+        voiceStatus.innerHTML = '<div class="status-message error">✗ Error: ' + event.error + '</div>';
+        showNotification('Speech recognition error: ' + event.error, 'error');
+      }
+    };
+  } else {
+    voiceBtn.disabled = true;
+    voiceBtn.innerHTML = '<i class="fas fa-microphone-slash"></i><span>Speech not supported</span>';
+    console.warn('Web Speech API not supported in this browser');
+  }
+}
+
+// Check bad words and trigger buzzer if needed
+async function checkBadWordsAndNotify(text) {
+  try {
+    const response = await fetch('/api/check-bad-words', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ text: text })
+    });
+
+    const data = await response.json();
+
+    if (data.has_bad_words) {
+      showNotification(data.warning, 'warning');
     } else {
-      voiceStatus.innerHTML = '<div class="status-message error">✗ ' + (data.error || 'Failed to recognize voice') + '</div>';
-      showNotification(data.error || 'Failed to recognize voice', 'error');
+      showNotification('Voice recognized: "' + text + '"', 'success');
     }
-
   } catch (error) {
-    if (error.name === 'AbortError') {
-      voiceStatus.innerHTML = '<div class="status-message warning">⚠ Listening stopped</div>';
-      showNotification('Voice input stopped', 'info');
-    } else {
-      console.error('Error:', error);
-      voiceStatus.innerHTML = '<div class="status-message error">✗ Error: ' + error.message + '</div>';
-      showNotification('An error occurred: ' + error.message, 'error');
-    }
-  } finally {
-    isRecording = false;
-    voiceBtn.classList.remove('listening');
-    voiceBtn.innerHTML = '<i class="fas fa-microphone"></i><span>Speak to Mini-Bot</span>';
-    voiceAbortController = null;
+    // Just show success if bad word check fails
+    showNotification('Voice recognized: "' + text + '"', 'success');
   }
 }
 
-function stopVoiceInput() {
-  if (voiceAbortController) {
-    voiceAbortController.abort();
+function handleVoiceInput() {
+  if (!recognition) {
+    showNotification('Speech recognition not supported in this browser', 'error');
+    return;
   }
-  isRecording = false;
-  voiceBtn.classList.remove('listening');
-  voiceBtn.innerHTML = '<i class="fas fa-microphone"></i><span>Speak to Mini-Bot</span>';
-  voiceStatus.innerHTML = '<div class="status-message warning">⚠ Listening stopped</div>';
 
-  setTimeout(() => {
-    voiceStatus.innerHTML = '';
-  }, 2000);
+  if (isRecording) {
+    recognition.stop();
+  } else {
+    // Set language for recognition
+    const lang = languageSelect.value;
+    const langMap = {
+      'en': 'en-US',
+      'es': 'es-ES',
+      'fr': 'fr-FR',
+      'de': 'de-DE',
+      'it': 'it-IT',
+      'pt': 'pt-PT',
+      'ru': 'ru-RU',
+      'ja': 'ja-JP',
+      'ko': 'ko-KR',
+      'zh-CN': 'zh-CN',
+      'zh-TW': 'zh-TW',
+      'ar': 'ar-SA',
+      'hi': 'hi-IN',
+      'nl': 'nl-NL',
+      'pl': 'pl-PL',
+      'tr': 'tr-TR'
+    };
+    recognition.lang = langMap[lang] || 'en-US';
+    recognition.start();
+  }
 }
+
+// Initialize speech recognition on page load
+document.addEventListener('DOMContentLoaded', function () {
+  initSpeechRecognition();
+});
 
 // ===================================
 // Audio Control Functions

@@ -7,7 +7,6 @@ from datetime import datetime
 import uuid
 from buzzer import buzzer
 import json
-import speech_recognition as sr
 
 app = Flask(__name__)
 
@@ -171,91 +170,48 @@ def text_to_speech():
         log_activity('Error', {'message': str(e)})
         return jsonify({'error': str(e)}), 500
 
-# Global microphone instance (like Act7)
-microphone = sr.Microphone()
-
-@app.route('/api/voice-to-text', methods=['POST'])
-def voice_to_text():
-    """Convert voice input to text using USB microphone (Act7 style)"""
-    try:
-        data = request.json
-        language = data.get('language', 'en')
-        
-        # Map language code to speech recognition format
-        lang_map = {
-            'en': 'en-US',
-            'es': 'es-ES',
-            'fr': 'fr-FR',
-            'de': 'de-DE',
-            'it': 'it-IT',
-            'pt': 'pt-PT',
-            'ru': 'ru-RU',
-            'ja': 'ja-JP',
-            'ko': 'ko-KR',
-            'zh-CN': 'zh-CN',
-            'zh-TW': 'zh-TW',
-            'ar': 'ar-SA',
-            'hi': 'hi-IN',
-            'nl': 'nl-NL',
-            'pl': 'pl-PL',
-            'tr': 'tr-TR'
-        }
-        
-        recognition_lang = lang_map.get(language, 'en-US')
-        
-        # Initialize recognizer
-        recognizer = sr.Recognizer()
-        
-        # Use USB microphone (Act7 style - simpler and more reliable)
-        try:
-            with microphone as source:
-                log_activity('Listening', {'language': LANGUAGES.get(language, {}).get('name', language)})
-                
-                # Quick ambient noise adjustment (Act7 uses 0.5s)
-                recognizer.adjust_for_ambient_noise(source, duration=0.5)
-                
-                # Listen with shorter timeout for better responsiveness (Act7 uses 5s)
-                audio = recognizer.listen(source, timeout=5, phrase_time_limit=5)
-        except OSError as e:
-            log_activity('Error', {'message': f'Microphone not found: {str(e)}'})
-            return jsonify({'error': 'Could not find PyAudio; check installation. Make sure your USB microphone is connected.'}), 500
-        
-        # Recognize speech using Google Speech Recognition
-        text = recognizer.recognize_google(audio, language=recognition_lang)
-        
-        log_activity('Voice Recognized', {
-            'text': text,
-            'language': LANGUAGES.get(language, {}).get('name', language)
-        })
-        
-        # Check for bad words
-        bad_words_found = check_bad_words(text)
-        warning = None
-        
-        if bad_words_found:
-            buzzer.beep(duration=2.0, pattern='warning')
-            warning = f"Warning: Inappropriate language detected: {', '.join(bad_words_found)}"
-        
-        return jsonify({
-            'success': True,
-            'text': text,
-            'warning': warning
-        })
-        
-    except sr.WaitTimeoutError:
-        return jsonify({'error': 'No speech detected. Please try again.'}), 400
-    except sr.UnknownValueError:
-        return jsonify({'error': 'Could not understand audio. Please speak clearly.'}), 400
-    except sr.RequestError as e:
-        return jsonify({'error': f'Speech recognition service error: {str(e)}'}), 500
-    except Exception as e:
-        log_activity('Error', {'message': str(e)})
-        return jsonify({'error': str(e)}), 500
-
 @app.route('/api/activity-log', methods=['GET'])
 def get_activity_log():
     """Get activity log for dashboard"""
     return jsonify({'log': activity_log})
+
+@app.route('/api/check-bad-words', methods=['POST'])
+def check_bad_words_endpoint():
+    """Check text for bad words and trigger buzzer if found"""
+    try:
+        data = request.json
+        text = data.get('text', '')
+        
+        # Log the voice recognition
+        log_activity('Voice Recognized', {
+            'text': text[:50] + '...' if len(text) > 50 else text
+        })
+        
+        # Check for bad words
+        bad_words_found = check_bad_words(text)
+        
+        if bad_words_found:
+            buzzer.beep(duration=2.0, pattern='warning')
+            warning = f"Warning: Inappropriate language detected: {', '.join(bad_words_found)}"
+            log_activity('Bad Words Detected', {
+                'text': text[:50] + '...' if len(text) > 50 else text,
+                'bad_words': bad_words_found
+            })
+            return jsonify({
+                'has_bad_words': True,
+                'bad_words': bad_words_found,
+                'warning': warning
+            })
+        
+        return jsonify({
+            'has_bad_words': False,
+            'bad_words': [],
+            'warning': None
+        })
+        
+    except Exception as e:
+        log_activity('Error', {'message': str(e)})
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/download/<filename>', methods=['GET'])
 def download_audio(filename):
