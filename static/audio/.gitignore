@@ -1,0 +1,3 @@
+# This directory stores generated audio files
+# Files are automatically cleaned up after 1 hour
+*.mp3

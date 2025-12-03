@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini-Bot TTS System</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <i class="fas fa-robot"></i>
+        <h1>Mini-Bot TTS System</h1>
+      </div>
+      <div class="subtitle">OGAY | Activity 8: Learning a Multilingual Text-to-Speech mini-bot with website</div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div class="content-wrapper">
+      <!-- Left Panel - Controls -->
+      <div class="left-panel">
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-microphone-alt"></i>
+            <h2>Voice Input</h2>
+          </div>
+          <div class="card-body">
+            <button id="voiceBtn" class="btn btn-voice">
+              <i class="fas fa-microphone"></i>
+              <span>Speak to Mini-Bot</span>
+            </button>
+            <div id="voiceStatus" class="status-message"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-keyboard"></i>
+            <h2>Text Input</h2>
+          </div>
+          <div class="card-body">
+            <textarea id="textInput" placeholder="Type your message here..." rows="5"></textarea>
+            <button id="speakBtn" class="btn btn-primary">
+              <i class="fas fa-volume-up"></i>
+              <span>Speak Text</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-cog"></i>
+            <h2>Settings</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="languageSelect">
+                <i class="fas fa-language"></i> Language
+              </label>
+              <select id="languageSelect" class="form-control">
+                {% for code, lang in languages.items() %}
+                <option value="{{ code }}">{{ lang.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="voiceSelect">
+                <i class="fas fa-user-tie"></i> Voice Variant
+              </label>
+              <select id="voiceSelect" class="form-control">
+                <option value="com">Default</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="speedSelect">
+                <i class="fas fa-tachometer-alt"></i> Speech Rate
+              </label>
+              <select id="speedSelect" class="form-control">
+                {% for key, rate in speech_rates.items() %}
+                <option value="{{ key }}">{{ rate.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="volumeSlider">
+                <i class="fas fa-volume-up"></i> Volume: <span id="volumeValue">100</span>%
+              </label>
+              <input type="range" id="volumeSlider" class="slider" min="0" max="100" value="100">
+            </div>
+
+            <button id="testBuzzerBtn" class="btn btn-secondary">
+              <i class="fas fa-bell"></i>
+              <span>Test Buzzer</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel - Dashboard -->
+      <div class="right-panel">
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-robot"></i>
+            <h2>Mini-Bot</h2>
+          </div>
+          <div class="card-body">
+            <div class="bot-display">
+              <!-- Animated Robot Face -->
+              <div class="robot-face" id="robotFace">
+                <div class="robot-head">
+                  <div class="robot-antenna">
+                    <div class="antenna-ball"></div>
+                  </div>
+                  <div class="robot-eyes">
+                    <div class="robot-eye left" id="leftEye">
+                      <div class="eye-pupil"></div>
+                      <div class="eye-shine"></div>
+                    </div>
+                    <div class="robot-eye right" id="rightEye">
+                      <div class="eye-pupil"></div>
+                      <div class="eye-shine"></div>
+                    </div>
+                  </div>
+                  <div class="robot-mouth" id="robotMouth">
+                    <div class="mouth-inner"></div>
+                  </div>
+                  <div class="robot-cheeks">
+                    <div class="cheek left"></div>
+                    <div class="cheek right"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="bot-status">
+                <div class="status-indicator">
+                  <span class="status-dot active"></span>
+                  <span id="botStatusText">Ready</span>
+                </div>
+              </div>
+              <div id="botMessage" class="bot-message">
+                Hello! I'm your Mini-Bot. Type or speak to me!
+              </div>
+              <div id="currentLanguage" class="current-language">
+                <i class="fas fa-language"></i> English
+              </div>
+            </div>
+
+            <!-- Audio Player -->
+            <div id="audioPlayer" class="audio-player" style="display: none;">
+              <div class="audio-controls">
+                <button id="playBtn" class="audio-btn">
+                  <i class="fas fa-play"></i>
+                </button>
+                <button id="pauseBtn" class="audio-btn" style="display: none;">
+                  <i class="fas fa-pause"></i>
+                </button>
+                <button id="downloadBtn" class="audio-btn">
+                  <i class="fas fa-download"></i>
+                </button>
+              </div>
+              <div class="audio-info">
+                <i class="fas fa-music"></i>
+                <span id="audioFilename">audio.mp3</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-chart-line"></i>
+            <h2>Activity Dashboard</h2>
+            <button id="refreshLogBtn" class="btn-icon" title="Refresh">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="activityLog" class="activity-log">
+              <div class="log-empty">
+                <i class="fas fa-inbox"></i>
+                <p>No activity yet</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+      <div class="spinner"></div>
+      <p>Processing...</p>
+    </div>
+  </div>
+
+  <!-- Audio Element -->
+  <audio id="audioElement" style="display: none;"></audio>
+
+  <!-- Languages Data -->
+  <script>
+    const LANGUAGES_DATA = {{ languages | tojson }};
+  </script>
+
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+
+</html>
