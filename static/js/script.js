@@ -249,7 +249,7 @@ function initSpeechRecognition() {
       isRecording = true;
       voiceBtn.classList.add('listening');
       voiceBtn.innerHTML = '<i class="fas fa-stop"></i><span>Stop Listening</span>';
-      voiceStatus.innerHTML = '<div class="status-message info">🎤 Listening... Speak now! (Auto-stops when you stop talking)</div>';
+      voiceStatus.innerHTML = '<div class="status-message info"> Listening...</div>';
       // Robot listening animation
       setRobotState('listening');
     };
