@@ -89,6 +89,7 @@ LANGUAGES = {
         'com.br': 'Brazil',
         'pt': 'Portugal'
     }},
+   'tl': {'name': 'Filipino (Tagalog)', 'voices': {'com.ph': 'Philippines'}},
     'ru': {'name': 'Russian', 'voices': {'ru': 'Russia'}},
     'ja': {'name': 'Japanese', 'voices': {'co.jp': 'Japan'}},
     'ko': {'name': 'Korean', 'voices': {'co.kr': 'Korea'}},
@@ -99,7 +100,6 @@ LANGUAGES = {
     'nl': {'name': 'Dutch', 'voices': {'nl': 'Netherlands'}},
     'pl': {'name': 'Polish', 'voices': {'pl': 'Poland'}},
     'tr': {'name': 'Turkish', 'voices': {'com.tr': 'Turkey'}},
-    'tl': {'name': 'Filipino (Tagalog)', 'voices': {'com.ph': 'Philippines'}},
 }
 
 # Speech rate options (slow=True for slow, slow=False for normal)
