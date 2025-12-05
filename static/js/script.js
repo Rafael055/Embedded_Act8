@@ -185,33 +185,37 @@ async function handleTextToSpeech() {
     const data = await response.json();
 
     if (response.ok && data.success) {
-      // Display warning if bad words detected
-      if (data.warning) {
+      // Check if bad words were detected
+      if (data.bad_words_detected) {
+        // Display "Badwords detected" in bot message
+        updateBotMessage('⚠️ Badwords detected');
         showNotification(data.warning, 'warning');
-        // Robot warning animation
+        // Robot warning animation with red flashing antenna
         setRobotState('warning');
-        setTimeout(() => setRobotState('idle'), 3000);
+        // Hide audio player - don't play the bad word
+        audioPlayer.style.display = 'none';
+        // Keep warning state longer for visibility
+        setTimeout(() => setRobotState('idle'), 5000);
       } else {
         showNotification('Speech generated successfully!', 'success');
+        // Update bot message with the spoken text
+        updateBotMessage(text);
+
+        // Show audio player
+        currentAudioUrl = data.audio_url;
+        currentFilename = data.filename;
+        audioElement.src = currentAudioUrl;
+        audioFilename.textContent = currentFilename;
+        audioPlayer.style.display = 'block';
+
+        // Reset button states - show play initially (will switch to pause when playing)
+        playBtn.style.display = 'inline-flex';
+        pauseBtn.style.display = 'none';
+
+        // Set volume and auto-play audio
+        audioElement.volume = volume / 100;
+        audioElement.play();
       }
-
-      // Update bot message
-      updateBotMessage(text);
-
-      // Show audio player
-      currentAudioUrl = data.audio_url;
-      currentFilename = data.filename;
-      audioElement.src = currentAudioUrl;
-      audioFilename.textContent = currentFilename;
-      audioPlayer.style.display = 'block';
-
-      // Reset button states - show play initially (will switch to pause when playing)
-      playBtn.style.display = 'inline-flex';
-      pauseBtn.style.display = 'none';
-
-      // Set volume and auto-play audio
-      audioElement.volume = volume / 100;
-      audioElement.play();
 
       // Track last spoken text and keep Speak button disabled for same text
       lastSpokenText = text;
@@ -324,10 +328,15 @@ async function checkBadWordsAndNotify(text) {
     const data = await response.json();
 
     if (data.has_bad_words) {
+      // Display "Badwords detected" in bot message instead of the bad word
+      updateBotMessage('⚠️ Badwords detected');
+      // Clear the text input so bad word is not visible
+      textInput.value = '';
       showNotification(data.warning, 'warning');
-      // Robot warning animation
+      // Robot warning animation with red flashing antenna
       setRobotState('warning');
-      setTimeout(() => setRobotState('idle'), 3000);
+      // Keep warning state longer for visibility
+      setTimeout(() => setRobotState('idle'), 5000);
     } else {
       showNotification('Voice recognized: "' + text + '"', 'success');
     }

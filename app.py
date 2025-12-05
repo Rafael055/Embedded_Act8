@@ -177,6 +177,14 @@ def text_to_speech():
                 'bad_words': bad_words_found,
                 'language': language
             })
+            # Don't generate speech for bad words - return immediately
+            return jsonify({
+                'success': True,
+                'bad_words_detected': True,
+                'warning': warning,
+                'audio_url': None,
+                'filename': None
+            })
         
         # Generate unique filename
         filename = f"tts_{uuid.uuid4().hex[:8]}_{int(time.time())}.mp3"
@@ -203,6 +211,7 @@ def text_to_speech():
         
         return jsonify({
             'success': True,
+            'bad_words_detected': False,
             'audio_url': f'/static/audio/{filename}',
             'filename': filename,
             'warning': warning

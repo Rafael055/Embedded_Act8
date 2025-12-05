@@ -430,12 +430,39 @@ textarea {
 }
 
 .robot-face.warning .antenna-ball {
-    background: #ffcc00;
-    animation: warning-flash 0.3s ease-in-out infinite alternate;
+    background: #e74c3c;
+    animation: badword-flash 0.2s ease-in-out infinite;
+    box-shadow: 0 0 20px #e74c3c, 0 0 40px #e74c3c, 0 0 60px #e74c3c;
+}
+
+.robot-face.warning .robot-antenna {
+    animation: antenna-shake 0.1s ease-in-out infinite;
 }
 
 .robot-face.warning .robot-mouth {
     background: #c0392b;
+}
+
+.robot-face.warning .robot-head {
+    box-shadow: 0 0 30px rgba(231, 76, 60, 0.5);
+}
+
+@keyframes badword-flash {
+    0%, 100% { 
+        background: #e74c3c;
+        box-shadow: 0 0 20px #e74c3c, 0 0 40px #e74c3c;
+        transform: translateX(-50%) scale(1.2);
+    }
+    50% { 
+        background: #ff0000;
+        box-shadow: 0 0 30px #ff0000, 0 0 50px #ff0000, 0 0 70px #ff0000;
+        transform: translateX(-50%) scale(1.5);
+    }
+}
+
+@keyframes antenna-shake {
+    0%, 100% { transform: translateX(-50%) rotate(-5deg); }
+    50% { transform: translateX(-50%) rotate(5deg); }
 }
 
 @keyframes warning-flash {
