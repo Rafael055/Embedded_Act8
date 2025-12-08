@@ -23,7 +23,7 @@ BAD_WORDS = [
     # English
     'damn', 'hell', 'crap', 'stupid', 'idiot', 'fool', 'jerk', 'dumb',
     'shit', 'fuck', 'ass', 'bitch', 'bastard', 'piss', 'dick', 'pussy',
-    'cock', 'whore', 'slut', 'fag', 'nigger', 'retard', 'cunt', 'asshole',
+    'cock', 'whore', 'slut', 'fag', 'nigga', 'retard', 'cunt', 'asshole',
     
     # Filipino/Tagalog
     'puta', 'putangina', 'gago', 'gaga', 'tanga', 'bobo', 'boba', 'tarantado',
